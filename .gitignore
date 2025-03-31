@@ -1,0 +1,11 @@
+# Ignore common files
+__pycache__/
+*.log
+.env
+.DS_Store
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore Python virtual environments
+venv/
