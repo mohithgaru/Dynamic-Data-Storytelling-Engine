@@ -1,13 +1,24 @@
 import streamlit as st
 import pandas as pd
 import mysql.connector
+import os
+
+# Ensure MySQL Connector is installed on Streamlit Cloud
+os.system("pip install mysql-connector-python")
+
+# Load environment variables (Use secrets in Streamlit Cloud)
+DB_HOST = os.getenv("DB_HOST", "your-database-host")
+DB_USER = os.getenv("DB_USER", "your-username")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "your-password")
+DB_NAME = os.getenv("DB_NAME", "DynamicInsights")
 
 # MySQL Connection
 def get_db_connection():
     try:
-        return mysql.connector.connect(
-            host="localhost", user="root", password="yourpassword", database="DynamicInsights"
+        conn = mysql.connector.connect(
+            host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME
         )
+        return conn
     except mysql.connector.Error as err:
         st.error(f"❌ Database Connection Error: {err}")
         return None
@@ -15,12 +26,14 @@ def get_db_connection():
 # Function to detect column types dynamically
 def infer_sql_column_types(df):
     type_mapping = {
-        'int64': 'INT',
-        'float64': 'FLOAT',
-        'object': 'VARCHAR(255)',
-        'bool': 'BOOLEAN'
+        "int64": "INT",
+        "float64": "FLOAT",
+        "object": "VARCHAR(255)",
+        "bool": "BOOLEAN",
     }
-    return ", ".join([f"{col} {type_mapping.get(str(df[col].dtype), 'VARCHAR(255)')}" for col in df.columns])
+    return ", ".join(
+        [f"{col} {type_mapping.get(str(df[col].dtype), 'VARCHAR(255)')}" for col in df.columns]
+    )
 
 # Streamlit UI
 st.title("📊 Dynamic Data Storytelling Engine")
@@ -39,9 +52,13 @@ if uploaded_file:
     if conn:
         try:
             cursor = conn.cursor()
-            cursor.execute(f"CALL CreateDynamicTable('{uploaded_file.name.split('.')[0]}', '{columns_sql}')")
+            table_name = uploaded_file.name.split(".")[0]
+            
+            # Create table dynamically
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS `{table_name}` ({columns_sql});")
             conn.commit()
-            st.success("✅ Table Created Successfully in MySQL!")
+            
+            st.success(f"✅ Table `{table_name}` Created Successfully in MySQL!")
         except mysql.connector.Error as err:
             st.error(f"⚠️ Error: {err}")
         finally:

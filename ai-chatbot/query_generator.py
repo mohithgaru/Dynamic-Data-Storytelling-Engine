@@ -1,4 +1,4 @@
-from langchain.llms import OpenAI
+from langchain_openai import OpenAI
 from langchain.prompts import PromptTemplate
 import re
 
@@ -21,13 +21,18 @@ def is_valid_sql(query):
 def generate_sql_query(user_question):
     try:
         query = query_prompt.format(question=user_question)
-        sql_query = llm.generate(query)
+        
+        # Fix: Pass a list containing the query string
+        sql_query = llm.generate([query])  
+
+        # Extract generated text from response
+        sql_query_text = sql_query.generations[0][0].text.strip()
 
         # Validate SQL Query
-        if not is_valid_sql(sql_query):
+        if not is_valid_sql(sql_query_text):
             return "⚠️ Invalid SQL Query Generated!"
         
-        return sql_query
+        return sql_query_text
     except Exception as e:
         return f"❌ AI Query Generation Error: {e}"
 
